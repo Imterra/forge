@@ -8,11 +8,28 @@ import (
 	"path/filepath"
 )
 
+const ROOT_DEFAULT = "~/.forge"
+
 func main() {
+
+	root_flag := flag.String("root", "",
+		"Specify root directory for Forge packages.")
+
 	//simulate_flag := flag.Bool("simulate", false,
 	//	"Display all actions instead of performing them.")
 
 	flag.Parse()
+
+	var forge_root *string
+	forge_root = new(string)
+	*forge_root = ROOT_DEFAULT
+	root_env := os.Getenv("FORGE_ROOT")
+	if root_env != "" {
+		forge_root = &root_env
+	}
+	if *root_flag != "" {
+		forge_root = root_flag
+	}
 
 	if len(flag.Args()) < 1 {
 		fmt.Fprintf(os.Stderr, "\n\nNo target specified.\n\n")
