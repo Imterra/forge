@@ -4,8 +4,9 @@ import (
 	"./target"
 	"flag"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"os"
-	"path/filepath"
+	//	"path/filepath"
 )
 
 const ROOT_DEFAULT = "~/.forge"
@@ -36,13 +37,16 @@ func main() {
 		fmt.Fprintf(os.Stderr, "usage: %s target...\n\n", os.Args[0])
 		os.Exit(1)
 	}
-	target_name := flag.Args()[0]
-
+	targets := flag.Args()
 	wd, _ := os.Getwd()
-	requested_target := target.ParseFile(
-		filepath.Join(wd, "build.yaml"), target_name)
 
-	fmt.Printf("%v\n", requested_target)
+	for i := 0; i < len(targets); i++ {
+		target_name := targets[i]
+		requested_target := target.MakeTarget(target_name, *forge_root, wd)
+		// target.ParseFile(build_file, target_name)
+		// fmt.Printf("%v\n", requested_target)
+		spew.Dump(requested_target)
+	}
 }
 
 /*	hello_c := target.LibCTarget{
