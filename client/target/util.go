@@ -4,6 +4,7 @@ import (
 	"../actions"
 	"../util"
 	"github.com/smallfish/simpleyaml"
+	"path/filepath"
 	"strings"
 )
 
@@ -37,7 +38,7 @@ func GetInFiles(t Target) []actions.File {
 	return infiles
 }
 
-func GetStringArray(key string, data *simpleyaml.Yaml) []string {
+func GetStringArray(key string, data *simpleyaml.Yaml, curwd string) []string {
 	value := data.Get(key)
 
 	if value == nil {
@@ -50,6 +51,9 @@ func GetStringArray(key string, data *simpleyaml.Yaml) []string {
 
 	for i := 0; i < len(value_arr); i++ {
 		str_val, _ := value.GetIndex(i).String()
+		if !filepath.IsAbs(str_val) {
+			str_val = filepath.Join(curwd, str_val)
+		}
 		string_array[i] = str_val
 	}
 
