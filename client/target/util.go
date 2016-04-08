@@ -2,13 +2,14 @@ package target
 
 import (
 	"../actions"
+	"../objectstorage"
 	"../util"
 	"github.com/smallfish/simpleyaml"
 	"path/filepath"
 	"strings"
 )
 
-func GetInFiles(t Target) []actions.File {
+func GetInFiles(t Target, s objectstorage.Storage) []actions.File {
 	sources := t.GetSources()
 	resources := t.GetResources()
 	dependencies := t.GetDependencies()
@@ -29,8 +30,9 @@ func GetInFiles(t Target) []actions.File {
 	max = max + len(resources)
 
 	for i := 0; i < len(dependencies); i++ {
-		a := dependencies[i].GetAction()
-		filename, fullpath := util.NormalizePath(a.GetOutFileName())
+		a := dependencies[i].GetAction(s)
+		filename, _ := util.NormalizePath(a.GetOutFileName())
+		fullpath := a.GetOutFilePath()
 		f := actions.GeneratedFile{Name: filename, FullPath: fullpath, Origin: a}
 		infiles[i+max] = &f
 	}

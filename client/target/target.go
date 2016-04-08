@@ -2,6 +2,7 @@ package target
 
 import (
 	"../actions"
+	"../objectstorage"
 )
 
 type Target interface {
@@ -9,7 +10,7 @@ type Target interface {
 	GetSources() []string
 	GetResources() []string
 	GetDependencies() []Target
-	GetAction() actions.Action
+	GetAction(storage objectstorage.Storage) actions.Action
 }
 
 type LibCTarget struct {
@@ -42,9 +43,9 @@ func (t *LibCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
-func (t *LibCTarget) GetAction() actions.Action {
-	infiles := GetInFiles(t)
-	action := actions.LibCAction{Name: t.GetName(), Infiles: infiles}
+func (t *LibCTarget) GetAction(storage objectstorage.Storage) actions.Action {
+	infiles := GetInFiles(t, storage)
+	action := actions.LibCAction{Name: t.GetName(), Infiles: infiles, Storage: storage}
 
 	return &action
 }
@@ -65,9 +66,9 @@ func (t *AppCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
-func (t *AppCTarget) GetAction() actions.Action {
-	infiles := GetInFiles(t)
-	action := actions.AppCAction{Name: t.GetName(), Infiles: infiles}
+func (t *AppCTarget) GetAction(storage objectstorage.Storage) actions.Action {
+	infiles := GetInFiles(t, storage)
+	action := actions.AppCAction{Name: t.GetName(), Infiles: infiles, Storage: storage}
 
 	return &action
 }

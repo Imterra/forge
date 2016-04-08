@@ -10,7 +10,8 @@ func GetSourceChecksum(files []File) [64]byte {
 	for i := 0; i < len(files); i++ {
 		s, err := ioutil.ReadFile(files[i].GetFullPath())
 		if err != nil {
-			panic(err)
+			//panic(err)
+			s = make([]byte, 0)
 		}
 		checksums[i] = sha512.Sum512(s)
 	}

@@ -46,4 +46,6 @@ type Action interface {
 	GetInfiles() []File
 	GetCmd() string
 	GetOutFileName() string
+	GetOutFilePath() string
+	IsRequired() bool
 }

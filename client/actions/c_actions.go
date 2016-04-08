@@ -25,6 +25,11 @@ func (a *LibCAction) GetCmd() string {
 
 func (a *LibCAction) GetOutFileName() string {
 	outfilename := fmt.Sprintf("%s.o", a.Name)
+	return outfilename
+}
+
+func (a *LibCAction) GetOutFilePath() string {
+	outfilename := a.GetOutFileName()
 	return a.Storage.GetFilePath(outfilename, GetSourceChecksum(a.Infiles))
 }
 
@@ -34,6 +39,12 @@ func (a *LibCAction) GetInfiles() []File {
 
 func (a *LibCAction) GetName() string {
 	return a.Name
+}
+
+func (a *LibCAction) IsRequired() bool {
+	outfilename := a.GetOutFileName()
+	checksum := GetSourceChecksum(a.Infiles)
+	return !a.Storage.HasObject(outfilename, checksum)
 }
 
 type AppCAction struct {
@@ -55,6 +66,10 @@ func (a *AppCAction) GetCmd() string {
 
 func (a *AppCAction) GetOutFileName() string {
 	outfilename := a.Name
+	return outfilename
+}
+func (a *AppCAction) GetOutFilePath() string {
+	outfilename := a.GetOutFileName()
 	return a.Storage.GetFilePath(outfilename, GetSourceChecksum(a.Infiles))
 }
 
@@ -64,4 +79,10 @@ func (a *AppCAction) GetInfiles() []File {
 
 func (a *AppCAction) GetName() string {
 	return a.Name
+}
+
+func (a *AppCAction) IsRequired() bool {
+	outfilename := a.GetOutFileName()
+	checksum := GetSourceChecksum(a.Infiles)
+	return !a.Storage.HasObject(outfilename, checksum)
 }

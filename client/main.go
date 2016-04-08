@@ -1,10 +1,11 @@
 package main
 
 import (
+	"./objectstorage"
 	"./target"
 	"flag"
 	"fmt"
-	//"github.com/davecgh/go-spew/spew"
+	"github.com/davecgh/go-spew/spew"
 	"os"
 	//	"path/filepath"
 	//	"./objectstorage"
@@ -40,16 +41,17 @@ func main() {
 	}
 	targets := flag.Args()
 	wd, _ := os.Getwd()
+	s := objectstorage.FileStorage{Root: "/home/pepol/src/forge_binfiles"}
 
 	for i := 0; i < len(targets); i++ {
 		target_name := targets[i]
 		requested_target := target.MakeTarget(target_name, *forge_root, wd)
 		// target.ParseFile(build_file, target_name)
 		fmt.Printf("%v\n", requested_target)
-		// spew.Dump(requested_target)
+		spew.Dump(requested_target.GetAction(&s))
+		fmt.Printf("\n\nAction necessary: %v\nChecksum: %v\n\n", requested_target.GetAction(&s).IsRequired(), requested_target.GetAction(&s).GetOutFilePath())
 	}
 
-	//	s := objectstorage.FileStorage{Root: "/home/pepol/src/forge_binfiles"}
 }
 
 /*	hello_c := target.LibCTarget{
