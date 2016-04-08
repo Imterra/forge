@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"../objectstorage"
 	"fmt"
 	"strings"
 )
@@ -8,6 +9,7 @@ import (
 type LibCAction struct {
 	Name    string
 	Infiles []File
+	Storage objectstorage.Storage
 }
 
 func (a *LibCAction) GetCmd() string {
@@ -22,7 +24,8 @@ func (a *LibCAction) GetCmd() string {
 }
 
 func (a *LibCAction) GetOutFileName() string {
-	return fmt.Sprintf("%s.o", a.Name)
+	outfilename := fmt.Sprintf("%s.o", a.Name)
+	return a.Storage.GetFilePath(outfilename, GetSourceChecksum(a.Infiles))
 }
 
 func (a *LibCAction) GetInfiles() []File {
@@ -36,6 +39,7 @@ func (a *LibCAction) GetName() string {
 type AppCAction struct {
 	Name    string
 	Infiles []File
+	Storage objectstorage.Storage
 }
 
 func (a *AppCAction) GetCmd() string {
@@ -50,7 +54,8 @@ func (a *AppCAction) GetCmd() string {
 }
 
 func (a *AppCAction) GetOutFileName() string {
-	return a.Name
+	outfilename := a.Name
+	return a.Storage.GetFilePath(outfilename, GetSourceChecksum(a.Infiles))
 }
 
 func (a *AppCAction) GetInfiles() []File {

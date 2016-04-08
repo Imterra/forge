@@ -4,9 +4,10 @@ import (
 	"./target"
 	"flag"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
+	//"github.com/davecgh/go-spew/spew"
 	"os"
 	//	"path/filepath"
+	//	"./objectstorage"
 )
 
 const ROOT_DEFAULT = "~/.forge"
@@ -44,9 +45,11 @@ func main() {
 		target_name := targets[i]
 		requested_target := target.MakeTarget(target_name, *forge_root, wd)
 		// target.ParseFile(build_file, target_name)
-		// fmt.Printf("%v\n", requested_target)
-		spew.Dump(requested_target)
+		fmt.Printf("%v\n", requested_target)
+		// spew.Dump(requested_target)
 	}
+
+	//	s := objectstorage.FileStorage{Root: "/home/pepol/src/forge_binfiles"}
 }
 
 /*	hello_c := target.LibCTarget{
