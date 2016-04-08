@@ -107,9 +107,11 @@ func MakeLibCTarget(t_name string, t_data *simpleyaml.Yaml, p_root, p_cur string
 		panic("Invalid type for LibCTarget!")
 	}
 
+	fmt.Printf("\n[DBG] MakeLibC: p_root: %v, p_cur: %v\n\n", p_root, p_cur)
+
 	dependencies := MakeDependencies(t_data, p_root, p_cur)
-	resources := GetStringArray("resources", t_data)
-	sources := GetStringArray("sources", t_data)
+	resources := GetStringArray("resources", t_data, p_cur)
+	sources := GetStringArray("sources", t_data, p_cur)
 
 	return &LibCTarget{
 		Name:         t_name,
@@ -126,9 +128,11 @@ func MakeAppCTarget(t_name string, t_data *simpleyaml.Yaml, p_root, p_cur string
 		panic("Invalid type for AppCTarget!")
 	}
 
+	fmt.Printf("[DBG] MakeAppC: p_root: %v, p_cur: %v\n", p_root, p_cur)
+
 	dependencies := MakeDependencies(t_data, p_root, p_cur)
-	resources := GetStringArray("resources", t_data)
-	sources := GetStringArray("sources", t_data)
+	resources := GetStringArray("resources", t_data, p_cur)
+	sources := GetStringArray("sources", t_data, p_cur)
 
 	return &AppCTarget{
 		Name:         t_name,
