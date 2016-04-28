@@ -2,58 +2,73 @@ package executor
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
 )
 
-type Task struct {
-	Type        string
-	OutFilename string
-	SrcArgs     []string
-	ResArgs     []string
-	DepArgs     []string
+type Config struct {
+	Pkgroot string
+	Outdir  string
+}
+
+//type Task struct {
+//	Type        string
+//	OutFilename string
+//	SrcArgs     []string
+//	ResArgs     []string
+//	DepArgs     []string
+//}
+
+type Task interface {
+	GetType() string
+	GetOutfile() string
+	GetInputs() []string
+	Execute(config *Config) (string, error)
+}
+
+type QuitTask struct{}
+
+func (t *QuitTask) GetType() string {
+	return "stop"
+}
+func (t *QuitTask) GetOutfile() string {
+	return ""
+}
+func (t *QuitTask) GetInputs() []string {
+	return make([]string, 0)
+}
+func (t *QuitTask) Execute(config *Config) (string, error) {
+	return "", nil
 }
 
 const (
 	WILCO = iota
 	DONE
 	QUIT
+	ERROR
 )
 
 type Response struct {
 	Id      int
 	Code    int
-	Outputs []string
+	Output  string
+	Outfile string
 }
 
-func Executor(id int, taskqueue chan Task, responder chan Response) {
+func Executor(id int, taskqueue chan Task, responder chan Response, config *Config) {
 	var task Task
 
-	WILCO_RESPONSE := Response{Id: id, Code: WILCO, Outputs: make([]string, 0)}
-	QUIT_RESPONSE := Response{Id: id, Code: QUIT, Outputs: make([]string, 0)}
+	//WILCO_RESPONSE := Response{Id: id, Code: WILCO, Output: "", Outfile: ""}
+	QUIT_RESPONSE := Response{Id: id, Code: QUIT, Output: "", Outfile: ""}
 
 	for {
 		task = <-taskqueue
-		if task.Type == "stop" {
+		if task.GetType() == "stop" {
 			responder <- QUIT_RESPONSE
 			return
 		}
-		responder <- WILCO_RESPONSE
-		responder <- *process_task(id, &task)
-	}
-}
-
-func process_task(id int, task *Task) *Response {
-	switch task.Type {
-	case "compile_c":
-		s := fmt.Sprintf("gcc -o %s -c %s", task.OutFilename, strings.Join(task.SrcArgs, " "))
-		output, err := exec.Command("echo", s).Output()
+		output, err := task.Execute(config)
 		if err != nil {
-			panic(err)
+			responder <- Response{Id: id, Code: ERROR, Output: fmt.Sprintf("%v\n%v\n", err, output), Outfile: task.GetOutfile()}
 		}
-		fmt.Printf("CMD OUT: %s\n", output)
+		responder <- Response{Id: id, Code: DONE, Output: output, Outfile: task.GetOutfile()}
 	}
-	arr := make([]string, 1)
-	arr[0] = task.OutFilename
-	return &Response{Id: id, Code: DONE, Outputs: arr}
 }
