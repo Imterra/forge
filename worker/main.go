@@ -16,15 +16,23 @@ const ROOT_DEFAULT = "~/forge"
 
 func main() {
 
-	port_flag := flag.Int("port", 1103, "Specify port number to listen on.")
+	port_flag := flag.Int("port", PORT_DEFAULT, "Specify port number to listen on.")
 	root_flag := flag.String("root", "",
 		"Specify root working directory for Forge.")
+	jobs_flag := flag.Int("jobs", runtime.NumCPU(),
+		"Specify number of jobs to run simultaneously.")
 	flag.Parse()
 
 	var port int
 	port = PORT_DEFAULT
 	if *port_flag > 0 && *port_flag < 65535 {
 		port = *port_flag
+	}
+
+	var jobs int
+	jobs = runtime.NumCPU()
+	if *jobs_flag > 0 {
+		jobs = *jobs_flag
 	}
 
 	var forge_root *string = new(string)
@@ -37,7 +45,7 @@ func main() {
 		forge_root = root_flag
 	}
 
-	sem := make(chan int, runtime.NumCPU())
+	sem := make(chan int, jobs)
 	config := tasks.Config{Root: *forge_root}
 
 	task := tasks.Task{Semaphore: sem, Config: &config}
