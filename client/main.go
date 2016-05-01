@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"os"
-	//	"path/filepath"
 )
 
 const ROOT_DEFAULT = "~/.forge"
@@ -15,9 +14,6 @@ func main() {
 
 	root_flag := flag.String("root", "",
 		"Specify root directory for Forge packages.")
-
-	//simulate_flag := flag.Bool("simulate", false,
-	//	"Display all actions instead of performing them.")
 
 	flag.Parse()
 
@@ -43,29 +39,9 @@ func main() {
 	for i := 0; i < len(targets); i++ {
 		target_name := targets[i]
 		requested_target := target.MakeTarget(target_name, *forge_root, wd)
-		// target.ParseFile(build_file, target_name)
-		// fmt.Printf("%v\n", requested_target)
 		spew.Dump(requested_target)
 		fmt.Println()
 		fmt.Println()
 		spew.Dump(requested_target.GetOutputFile())
 	}
 }
-
-/*	hello_c := target.LibCTarget{
-		Name:         "libhello",
-		Sources:      []string{"/root/hello.c"},
-		Resources:    []string{},
-		Dependencies: []target.Target{}}
-	hello_out := target.AppCTarget{
-		Name:         "hello",
-		Sources:      []string{},
-		Resources:    []string{},
-		Dependencies: []target.Target{&hello_c}}
-
-	a := hello_out.GetAction()
-
-	spew.Dump(a)
-
-	util.PrintAllActions(a)
-*/
