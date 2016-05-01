@@ -20,21 +20,38 @@ func GetInfileData(files []File, rootdir string) ([]proto.FileInfo, error) {
 	return infiles, nil
 }
 
-func MakeCObjects(name string, sources []string) []File {
+func MakeCObjects(name string, sources []string, file_list *map[string]File) []File {
 	inputs := make([]File, len(sources))
 
 	for i := range sources {
-		file := SourceFile{Filename: strings.TrimPrefix(sources[i], "//")}
+		filename := strings.TrimPrefix(sources[i], "//")
+		outfilename := strings.TrimSuffix(filename, ".c") + ".o"
+
+		f, ok := (*file_list)[outfilename]
+		if ok {
+			inputs[i] = f
+			continue
+		}
+
+		f, ok = (*file_list)[filename]
+		var file File
+		if ok {
+			file = f
+		} else {
+			file = &SourceFile{Filename: filename}
+			(*file_list)[filename] = file
+		}
+
 		action := Action{
 			Name:    fmt.Sprintf("CC(%s)", sources[i]),
-			Infiles: []File{&file},
+			Infiles: []File{file},
 			Method:  "Task.CompileC",
 		}
 		genfile := GeneratedFile{
-			Filename: strings.TrimSuffix(
-				strings.TrimPrefix(sources[i], "//"), ".c") + ".o",
-			Action: &action,
+			Filename: outfilename,
+			Action:   &action,
 		}
+		(*file_list)[outfilename] = &genfile
 		inputs[i] = &genfile
 	}
 

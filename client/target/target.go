@@ -10,8 +10,10 @@ type Target interface {
 	GetSources() []string
 	GetResources() []string
 	GetDependencies() []Target
-	GetOutputFile() *actions.GeneratedFile
+	GetOutputFile() actions.File
 }
+
+var file_list map[string]actions.File
 
 type LibCTarget struct {
 	Name         string
@@ -43,20 +45,30 @@ func (t *LibCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
-// TODO: Check if file hasn't been previously generated, if was, use the same.
-// TODO: Figure out a way to start execution (maybe "Done" parameter of action?)
+func (t *LibCTarget) GetOutputFile() actions.File {
+	if file_list == nil {
+		file_list = make(map[string]actions.File)
+	}
 
-func (t *LibCTarget) GetOutputFile() *actions.GeneratedFile {
-	inputs := actions.MakeCObjects(t.Name, t.Sources)
+	outfile_name := strings.TrimPrefix(t.Name, "//") + ".a"
+
+	f, ok := file_list[outfile_name]
+	if ok {
+		return f
+	}
+
+	inputs := actions.MakeCObjects(t.Name, t.Sources, &file_list)
 	ar_action := actions.Action{
 		Name:    strings.TrimPrefix(t.Name, "//"),
 		Infiles: inputs,
 		Method:  "Task.ArLink",
 	}
 	outfile := actions.GeneratedFile{
-		Filename: strings.TrimPrefix(t.Name, "//") + ".a",
+		Filename: outfile_name,
 		Action:   &ar_action,
 	}
+
+	file_list[outfile_name] = &outfile
 	return &outfile
 }
 
@@ -76,8 +88,19 @@ func (t *AppCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
-func (t *AppCTarget) GetOutputFile() *actions.GeneratedFile {
-	c_inputs := actions.MakeCObjects(t.Name, t.Sources)
+func (t *AppCTarget) GetOutputFile() actions.File {
+	if file_list == nil {
+		file_list = make(map[string]actions.File)
+	}
+
+	outfile_name := strings.TrimPrefix(t.Name, "//")
+
+	f, ok := file_list[outfile_name]
+	if ok {
+		return f
+	}
+
+	c_inputs := actions.MakeCObjects(t.Name, t.Sources, &file_list)
 	inputs := make([]actions.File, len(c_inputs)+len(t.Dependencies))
 
 	in_count := len(c_inputs)
@@ -91,14 +114,16 @@ func (t *AppCTarget) GetOutputFile() *actions.GeneratedFile {
 	}
 
 	link_action := actions.Action{
-		Name:    strings.TrimPrefix(t.Name, "//"),
+		Name:    outfile_name,
 		Infiles: inputs,
 		Method:  "Task.LdLink",
 	}
 
 	outfile := actions.GeneratedFile{
-		Filename: strings.TrimPrefix(t.Name, "//"),
+		Filename: outfile_name,
 		Action:   &link_action,
 	}
+
+	file_list[outfile_name] = &outfile
 	return &outfile
 }
