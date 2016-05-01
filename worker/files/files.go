@@ -51,6 +51,6 @@ func (f *File) RecvFile(args *proto.File, resp *proto.FileResponse) error {
 	}
 
 	resp.Filename = args.Filename
-	resp.Checksum = GetDataChecksum(args.Content)
+	resp.Checksum = proto.GetDataChecksum(args.Content)
 	return nil
 }

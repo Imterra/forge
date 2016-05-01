@@ -3,6 +3,7 @@ package actions
 import (
 	"../../proto"
 	"../util"
+	"log"
 	"net/rpc"
 )
 
@@ -52,7 +53,11 @@ func (f *GeneratedFile) GetOrigin() *Action {
 }
 
 func Execute(action Action, client *rpc.Client, config *util.Config) {
-	infiles := GetInfilePaths(action.Infiles)
+	infiles, err := GetInfileData(action.Infiles, config.Rootdir)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	args := proto.Args{
 		Name:        action.Name,

@@ -1,4 +1,4 @@
-package files
+package proto
 
 import (
 	"crypto/sha512"

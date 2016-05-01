@@ -1,8 +1,8 @@
 package target
 
 import (
+	"../../log"
 	"fmt"
-	//	"github.com/davecgh/go-spew/spew"
 	"github.com/smallfish/simpleyaml"
 	"io/ioutil"
 	"path/filepath"
@@ -14,8 +14,6 @@ var target_list map[string]Target
 func MakeTarget(targetname, root, cur_dir string) Target {
 
 	name := GetFQTN(targetname, root, cur_dir)
-
-	fmt.Printf("[DBG] TN: %v, FQTN: %v\n", targetname, name)
 
 	if target_list == nil {
 		target_list = make(map[string]Target)
@@ -40,20 +38,18 @@ func GetFile(targetname, packageroot string) string {
 	}
 	fdir := filepath.Dir(targetpath)
 
-	fmt.Printf("[DBG] TN: %v, BF: %v\n", targetname, filepath.Join(fdir, "build.yaml"))
-
 	return filepath.Join(fdir, "build.yaml")
 }
 
 func ParseFile(path, targetname, packageroot string) Target {
 	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		panic(err)
+		log.Error(err.Error())
 	}
 
 	yaml, err := simpleyaml.NewYaml(source)
 	if err != nil {
-		panic(err)
+		log.Error(fmt.Sprintf("cannot parse file %s (not a valid YAML)", path))
 	}
 
 	filedir := filepath.Dir(path)
@@ -64,7 +60,7 @@ func ParseFile(path, targetname, packageroot string) Target {
 
 	targettype, err := targetdata.Get("type").String()
 	if err != nil {
-		panic(err)
+		log.Error(fmt.Sprintf("target %s does not exist", targetname))
 	}
 
 	var target Target
@@ -104,10 +100,8 @@ func MakeLibCTarget(t_name string, t_data *simpleyaml.Yaml, p_root, p_cur string
 	t_type, _ := t_data.Get("type").String()
 
 	if t_type != "lib_c" {
-		panic("Invalid type for LibCTarget!")
+		log.Error("invalid type for LibCTarget")
 	}
-
-	fmt.Printf("\n[DBG] MakeLibC: p_root: %v, p_cur: %v\n\n", p_root, p_cur)
 
 	dependencies := MakeDependencies(t_data, p_root, p_cur)
 	resources := GetStringArray("resources", t_data, p_root, p_cur)
@@ -125,10 +119,8 @@ func MakeAppCTarget(t_name string, t_data *simpleyaml.Yaml, p_root, p_cur string
 	t_type, _ := t_data.Get("type").String()
 
 	if t_type != "app_c" {
-		panic("Invalid type for AppCTarget!")
+		log.Error("invalid type for AppCTarget")
 	}
-
-	fmt.Printf("[DBG] MakeAppC: p_root: %v, p_cur: %v\n", p_root, p_cur)
 
 	dependencies := MakeDependencies(t_data, p_root, p_cur)
 	resources := GetStringArray("resources", t_data, p_root, p_cur)

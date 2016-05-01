@@ -1,16 +1,23 @@
 package actions
 
 import (
+	"../../proto"
 	"fmt"
+	"io/ioutil"
 	"strings"
 )
 
-func GetInfilePaths(files []File) []string {
-	infiles := make([]string, len(files))
+func GetInfileData(files []File, rootdir string) ([]proto.FileInfo, error) {
+	infiles := make([]proto.FileInfo, len(files))
 	for i := range files {
-		infiles[i] = files[i].GetPath()
+		infiles[i].Filename = files[i].GetPath()
+		d, err := ioutil.ReadFile(files[i].GetAbsolutePath(rootdir))
+		if err != nil {
+			return nil, err
+		}
+		infiles[i].Checksum = proto.GetDataChecksum(d)
 	}
-	return infiles
+	return infiles, nil
 }
 
 func MakeCObjects(name string, sources []string) []File {
@@ -28,7 +35,6 @@ func MakeCObjects(name string, sources []string) []File {
 				strings.TrimPrefix(sources[i], "//"), ".c") + ".o",
 			Action: &action,
 		}
-		fmt.Printf("[DBG] TN: %s, IF: %s, OF: %s\n", name, file.Filename, genfile.Filename)
 		inputs[i] = &genfile
 	}
 

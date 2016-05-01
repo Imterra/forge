@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	Request bool
+	Rootdir string
 	Client  *rpc.Client
 	Monitor chan *rpc.Call
 }

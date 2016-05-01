@@ -43,6 +43,9 @@ func (t *LibCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
+// TODO: Check if file hasn't been previously generated, if was, use the same.
+// TODO: Figure out a way to start execution (maybe "Done" parameter of action?)
+
 func (t *LibCTarget) GetOutputFile() *actions.GeneratedFile {
 	inputs := actions.MakeCObjects(t.Name, t.Sources)
 	ar_action := actions.Action{

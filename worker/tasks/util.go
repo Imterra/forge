@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func processInputs(inputs []string, dir string, prepend []string) []string {
+func processInputs(inputs []proto.FileInfo, dir string, prepend []string) []string {
 	ret := make([]string, len(inputs)+len(prepend))
 	P := len(prepend)
 
@@ -15,7 +15,7 @@ func processInputs(inputs []string, dir string, prepend []string) []string {
 	}
 
 	for i := range inputs {
-		ret[i+P] = filepath.Join(dir, inputs[i])
+		ret[i+P] = filepath.Join(dir, inputs[i].Filename)
 	}
 
 	return ret

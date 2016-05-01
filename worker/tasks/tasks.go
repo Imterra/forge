@@ -26,14 +26,14 @@ func (t *Task) CompileC(args *proto.Args, resp *proto.Response) error {
 		return errors.New("Compile requires one file to be compiled!")
 	}
 
-	if !strings.HasSuffix(args.Inputs[0], ".c") {
-		outfilename = args.Inputs[0] + ".o"
+	if !strings.HasSuffix(args.Inputs[0].Filename, ".c") {
+		outfilename = args.Inputs[0].Filename + ".o"
 	} else {
-		outfilename = strings.TrimSuffix(args.Inputs[0], ".c") + ".o"
+		outfilename = strings.TrimSuffix(args.Inputs[0].Filename, ".c") + ".o"
 	}
 
 	outfile_path := filepath.Join(t.Config.Root, "BINFILES", outfilename)
-	infile_path := filepath.Join(t.Config.Root, args.Inputs[0])
+	infile_path := filepath.Join(t.Config.Root, args.Inputs[0].Filename)
 
 	output, err := exec.Command("gcc", "-std=c99", "-c", "-o",
 		outfile_path, infile_path).CombinedOutput()
