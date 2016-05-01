@@ -1,10 +1,16 @@
 package util
 
 import (
-	"../actions"
-	"fmt"
+	"net/rpc"
 	"path/filepath"
+	"strings"
 )
+
+type Config struct {
+	Request bool
+	Client  *rpc.Client
+	Monitor chan *rpc.Call
+}
 
 func NormalizePath(path string) (string, string) {
 	clean_path := filepath.Clean(path)
@@ -12,14 +18,6 @@ func NormalizePath(path string) (string, string) {
 	return filepath.Base(full_path), full_path
 }
 
-func PrintAllActions(action actions.Action) {
-	infiles := action.GetInfiles()
-	for i := 0; i < len(infiles); i++ {
-		origin := infiles[i].GetOrigin()
-		if origin != nil {
-			PrintAllActions(origin)
-		}
-	}
-
-	fmt.Println(action.GetCmd())
+func GetFullPath(abs_filename, rootdir string) string {
+	return filepath.Join(rootdir, strings.TrimPrefix(abs_filename, "//"))
 }

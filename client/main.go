@@ -46,6 +46,9 @@ func main() {
 		// target.ParseFile(build_file, target_name)
 		// fmt.Printf("%v\n", requested_target)
 		spew.Dump(requested_target)
+		fmt.Println()
+		fmt.Println()
+		spew.Dump(requested_target.GetOutputFile())
 	}
 }
 

@@ -2,6 +2,7 @@ package target
 
 import (
 	"../actions"
+	"strings"
 )
 
 type Target interface {
@@ -9,7 +10,7 @@ type Target interface {
 	GetSources() []string
 	GetResources() []string
 	GetDependencies() []Target
-	GetAction() actions.Action
+	GetOutputFile() *actions.GeneratedFile
 }
 
 type LibCTarget struct {
@@ -42,11 +43,18 @@ func (t *LibCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
-func (t *LibCTarget) GetAction() actions.Action {
-	infiles := GetInFiles(t)
-	action := actions.LibCAction{Name: t.GetName(), Infiles: infiles}
-
-	return &action
+func (t *LibCTarget) GetOutputFile() *actions.GeneratedFile {
+	inputs := actions.MakeCObjects(t.Name, t.Sources)
+	ar_action := actions.Action{
+		Name:    strings.TrimPrefix(t.Name, "//"),
+		Infiles: inputs,
+		Method:  "Task.ArLink",
+	}
+	outfile := actions.GeneratedFile{
+		Filename: strings.TrimPrefix(t.Name, "//") + ".a",
+		Action:   &ar_action,
+	}
+	return &outfile
 }
 
 func (t *AppCTarget) GetName() string {
@@ -65,9 +73,29 @@ func (t *AppCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
-func (t *AppCTarget) GetAction() actions.Action {
-	infiles := GetInFiles(t)
-	action := actions.AppCAction{Name: t.GetName(), Infiles: infiles}
+func (t *AppCTarget) GetOutputFile() *actions.GeneratedFile {
+	c_inputs := actions.MakeCObjects(t.Name, t.Sources)
+	inputs := make([]actions.File, len(c_inputs)+len(t.Dependencies))
 
-	return &action
+	in_count := len(c_inputs)
+
+	for i := range c_inputs {
+		inputs[i] = c_inputs[i]
+	}
+
+	for i := range t.Dependencies {
+		inputs[i+in_count] = t.Dependencies[i].GetOutputFile()
+	}
+
+	link_action := actions.Action{
+		Name:    strings.TrimPrefix(t.Name, "//"),
+		Infiles: inputs,
+		Method:  "Task.LdLink",
+	}
+
+	outfile := actions.GeneratedFile{
+		Filename: strings.TrimPrefix(t.Name, "//"),
+		Action:   &link_action,
+	}
+	return &outfile
 }
