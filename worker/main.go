@@ -3,6 +3,7 @@ package main
 import (
 	"./files"
 	"./tasks"
+	"./util"
 	"flag"
 	"fmt"
 	"log"
@@ -51,8 +52,10 @@ func main() {
 
 	task := tasks.Task{Semaphore: sem, Config: &config}
 	file := files.File{Rootdir: *forge_root}
+	util := util.Util{Jobs: jobs}
 	rpc.Register(&task)
 	rpc.Register(&file)
+	rpc.Register(&util)
 
 	port_spec := fmt.Sprintf(":%d", port)
 

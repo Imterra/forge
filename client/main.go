@@ -2,18 +2,47 @@ package main
 
 import (
 	"./target"
+	"./worker"
 	"flag"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"os"
+	"strings"
 )
 
 const ROOT_DEFAULT = "~/.forge"
+
+type workers []*worker.Worker
+
+func (w *workers) String() string {
+	ws := make([]string, len(*w))
+	for i := range *w {
+		ws[i] = (*w)[i].Addr
+	}
+	return strings.Join(ws, ",")
+}
+
+func (w *workers) Set(value string) error {
+	for _, w_host := range strings.Split(value, ",") {
+		worker, err := worker.GetWorker(w_host)
+		if err != nil {
+			return err
+		}
+		*w = append(*w, worker)
+	}
+	return nil
+}
 
 func main() {
 
 	root_flag := flag.String("root", "",
 		"Specify root directory for Forge packages.")
+
+	var workers_flag workers
+	// TODO: Add locally-running worker automatically.
+	flag.Var(
+		&workers_flag, "worker",
+		"comma-separated list of worker addresses (host:port)")
 
 	flag.Parse()
 
@@ -40,8 +69,7 @@ func main() {
 		target_name := targets[i]
 		requested_target := target.MakeTarget(target_name, *forge_root, wd)
 		spew.Dump(requested_target)
-		fmt.Println()
-		fmt.Println()
-		spew.Dump(requested_target.GetOutputFile())
 	}
+
+	spew.Dump(workers_flag[0])
 }
