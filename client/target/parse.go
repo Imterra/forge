@@ -10,10 +10,29 @@ import (
 )
 
 var target_list map[string]Target
+var temp_target_list map[string]int
 
 func MakeTarget(targetname, root, cur_dir string) Target {
 
 	name := GetFQTN(targetname, root, cur_dir)
+
+	if temp_target_list == nil {
+		temp_target_list = make(map[string]int)
+	}
+
+	_, ok := temp_target_list[name]
+	if ok {
+		affected_targets := make([]string, len(temp_target_list))
+		i := 0
+		for k := range temp_target_list {
+			affected_targets[i] = k
+			i++
+		}
+		log.Error(
+			fmt.Sprintf(
+				"target %s contains circular dependencies\n(affected targets: %s)",
+				name, strings.Join(affected_targets, ", ")))
+	}
 
 	if target_list == nil {
 		target_list = make(map[string]Target)
@@ -25,7 +44,9 @@ func MakeTarget(targetname, root, cur_dir string) Target {
 	}
 
 	build_file := GetFile(name, root)
+	temp_target_list[name] = 1
 	t = ParseFile(build_file, name, root)
+	delete(temp_target_list, name)
 	target_list[name] = t
 	return t
 }
