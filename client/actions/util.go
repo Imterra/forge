@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-func GetInfileData(files []File, rootdir string) ([]proto.FileInfo, error) {
+func GetInfileData(files []*File, rootdir string) ([]proto.FileInfo, error) {
 	infiles := make([]proto.FileInfo, len(files))
 	for i := range files {
-		infiles[i].Filename = files[i].GetPath()
+		infiles[i].Filename = files[i].Filename
 		d, err := ioutil.ReadFile(files[i].GetAbsolutePath(rootdir))
 		if err != nil {
 			return nil, err
@@ -20,38 +20,38 @@ func GetInfileData(files []File, rootdir string) ([]proto.FileInfo, error) {
 	return infiles, nil
 }
 
-func MakeCObjects(name string, sources []string, file_list *map[string]File) []File {
-	inputs := make([]File, len(sources))
+func MakeCObjects(name string, sources []string, file_list map[string]*File) []*File {
+	inputs := make([]*File, len(sources))
 
 	for i := range sources {
 		filename := strings.TrimPrefix(sources[i], "//")
 		outfilename := strings.TrimSuffix(filename, ".c") + ".o"
 
-		f, ok := (*file_list)[outfilename]
+		f, ok := file_list[outfilename]
 		if ok {
 			inputs[i] = f
 			continue
 		}
 
-		f, ok = (*file_list)[filename]
-		var file File
+		f, ok = file_list[filename]
+		var file *File
 		if ok {
 			file = f
 		} else {
-			file = &SourceFile{Filename: filename}
-			(*file_list)[filename] = file
+			file = &File{Filename: filename, Action: nil}
+			file_list[filename] = file
 		}
 
 		action := Action{
 			Name:    fmt.Sprintf("CC(%s)", sources[i]),
-			Infiles: []File{file},
+			Infiles: []*File{file},
 			Method:  "Task.CompileC",
 		}
-		genfile := GeneratedFile{
+		genfile := File{
 			Filename: outfilename,
 			Action:   &action,
 		}
-		(*file_list)[outfilename] = &genfile
+		file_list[outfilename] = &genfile
 		inputs[i] = &genfile
 	}
 

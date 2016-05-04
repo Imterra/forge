@@ -7,49 +7,19 @@ import (
 	"net/rpc"
 )
 
-type File interface {
-	GetPath() string
-	GetAbsolutePath(rootdir string) string
-	GetOrigin() *Action
-}
-
-type Action struct {
-	Name    string
-	Infiles []File
-	Method  string
-}
-
-type SourceFile struct {
-	Filename string
-}
-
-func (f *SourceFile) GetPath() string {
-	return f.Filename
-}
-
-func (f *SourceFile) GetAbsolutePath(rootdir string) string {
-	return util.GetFullPath(f.Filename, rootdir)
-}
-
-func (f *SourceFile) GetOrigin() *Action {
-	return nil
-}
-
-type GeneratedFile struct {
+type File struct {
 	Filename string
 	Action   *Action
 }
 
-func (f *GeneratedFile) GetPath() string {
-	return f.Filename
-}
-
-func (f *GeneratedFile) GetAbsolutePath(rootdir string) string {
+func (f *File) GetAbsolutePath(rootdir string) string {
 	return util.GetFullPath(f.Filename, rootdir)
 }
 
-func (f *GeneratedFile) GetOrigin() *Action {
-	return f.Action
+type Action struct {
+	Name    string
+	Infiles []*File
+	Method  string
 }
 
 func Execute(action Action, client *rpc.Client, config *util.Config) {

@@ -10,10 +10,10 @@ type Target interface {
 	GetSources() []string
 	GetResources() []string
 	GetDependencies() []Target
-	GetOutputFile() actions.File
+	GetOutputFile() *actions.File
 }
 
-var file_list map[string]actions.File
+var file_list map[string]*actions.File
 
 type LibCTarget struct {
 	Name         string
@@ -45,9 +45,9 @@ func (t *LibCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
-func (t *LibCTarget) GetOutputFile() actions.File {
+func (t *LibCTarget) GetOutputFile() *actions.File {
 	if file_list == nil {
-		file_list = make(map[string]actions.File)
+		file_list = make(map[string]*actions.File)
 	}
 
 	outfile_name := strings.TrimPrefix(t.Name, "//") + ".a"
@@ -57,13 +57,13 @@ func (t *LibCTarget) GetOutputFile() actions.File {
 		return f
 	}
 
-	inputs := actions.MakeCObjects(t.Name, t.Sources, &file_list)
+	inputs := actions.MakeCObjects(t.Name, t.Sources, file_list)
 	ar_action := actions.Action{
 		Name:    strings.TrimPrefix(t.Name, "//"),
 		Infiles: inputs,
 		Method:  "Task.ArLink",
 	}
-	outfile := actions.GeneratedFile{
+	outfile := actions.File{
 		Filename: outfile_name,
 		Action:   &ar_action,
 	}
@@ -88,9 +88,9 @@ func (t *AppCTarget) GetDependencies() []Target {
 	return t.Dependencies
 }
 
-func (t *AppCTarget) GetOutputFile() actions.File {
+func (t *AppCTarget) GetOutputFile() *actions.File {
 	if file_list == nil {
-		file_list = make(map[string]actions.File)
+		file_list = make(map[string]*actions.File)
 	}
 
 	outfile_name := strings.TrimPrefix(t.Name, "//")
@@ -100,8 +100,8 @@ func (t *AppCTarget) GetOutputFile() actions.File {
 		return f
 	}
 
-	c_inputs := actions.MakeCObjects(t.Name, t.Sources, &file_list)
-	inputs := make([]actions.File, len(c_inputs)+len(t.Dependencies))
+	c_inputs := actions.MakeCObjects(t.Name, t.Sources, file_list)
+	inputs := make([]*actions.File, len(c_inputs)+len(t.Dependencies))
 
 	in_count := len(c_inputs)
 
@@ -119,7 +119,7 @@ func (t *AppCTarget) GetOutputFile() actions.File {
 		Method:  "Task.LdLink",
 	}
 
-	outfile := actions.GeneratedFile{
+	outfile := actions.File{
 		Filename: outfile_name,
 		Action:   &link_action,
 	}
