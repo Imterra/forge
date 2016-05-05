@@ -6,8 +6,6 @@ import (
 	"../worker"
 	"log"
 	"net/rpc"
-	"sync/atomic"
-	"unsafe"
 )
 
 type File struct {
@@ -44,14 +42,16 @@ func (action *Action) Execute(client *rpc.Client, config *util.Config) *rpc.Call
 }
 
 func MakeFile(file *File, conf *util.Config, notify chan *File) {
-	var action *Action
-	action = (*Action)(atomic.SwapPointer(
-		(*unsafe.Pointer)((unsafe.Pointer)(&file.Action)),
-		nil))
+	file.Sem <- 1
+
+	action := file.Action
+	file.Action = nil
 
 	if action == nil {
 		// TODO: Check if file exists, notify.
+		<-file.Sem
 		notify <- file
+		return
 	}
 
 	new_notify := make(chan *File, len(action.Infiles))
@@ -71,5 +71,6 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	// TODO: Wait for action to finish, check if successful, if so, notify, otherwise, log error.
 	<-call.Done
 
+	<-file.Sem
 	notify <- file
 }
