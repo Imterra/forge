@@ -38,11 +38,12 @@ func MakeCObjects(name string, sources []string, file_list map[string]*File) []*
 		if ok {
 			file = f
 		} else {
-			file = &File{Filename: filename, Action: nil}
+			file = &File{Filename: filename, Action: nil, Sem: make(chan int)}
 			file_list[filename] = file
 		}
 
 		action := Action{
+			// TODO: Action name == outfile name
 			Name:    fmt.Sprintf("CC(%s)", sources[i]),
 			Infiles: []*File{file},
 			Method:  "Task.CompileC",
@@ -50,6 +51,7 @@ func MakeCObjects(name string, sources []string, file_list map[string]*File) []*
 		genfile := File{
 			Filename: outfilename,
 			Action:   &action,
+			Sem:      make(chan int),
 		}
 		file_list[outfilename] = &genfile
 		inputs[i] = &genfile

@@ -66,6 +66,7 @@ func (t *LibCTarget) GetOutputFile() *actions.File {
 	outfile := actions.File{
 		Filename: outfile_name,
 		Action:   &ar_action,
+		Sem:      make(chan int),
 	}
 
 	file_list[outfile_name] = &outfile
@@ -122,6 +123,7 @@ func (t *AppCTarget) GetOutputFile() *actions.File {
 	outfile := actions.File{
 		Filename: outfile_name,
 		Action:   &link_action,
+		Sem:      make(chan int),
 	}
 
 	file_list[outfile_name] = &outfile

@@ -1,7 +1,6 @@
 package util
 
 import (
-	"net/rpc"
 	"path/filepath"
 	"strings"
 )
@@ -9,8 +8,6 @@ import (
 type Config struct {
 	Request bool
 	Rootdir string
-	Client  *rpc.Client
-	Monitor chan *rpc.Call
 }
 
 func NormalizePath(path string) (string, string) {
