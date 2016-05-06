@@ -1,11 +1,13 @@
 package main
 
 import (
+	"../log"
+	"./actions"
 	"./target"
+	"./util"
 	"./worker"
 	"flag"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"os"
 	"strings"
 )
@@ -65,11 +67,20 @@ func main() {
 	targets := flag.Args()
 	wd, _ := os.Getwd()
 
-	for i := 0; i < len(targets); i++ {
+	notifier := make(chan *actions.File, len(targets))
+	var conf util.Config
+
+	for i := range targets {
 		target_name := targets[i]
 		requested_target := target.MakeTarget(target_name, *forge_root, wd)
-		spew.Dump(requested_target)
+		requested_file := requested_target.GetOutputFile()
+		go actions.MakeFile(requested_file, &conf, notifier)
 	}
 
-	spew.Dump(workers_flag[0])
+	for _ = range targets {
+		<-notifier
+	}
+	// TODO: Write metadata for all files.
+
+	log.Succ("Everything done")
 }
