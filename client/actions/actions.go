@@ -1,11 +1,15 @@
 package actions
 
 import (
+	"../../log"
 	"../../proto"
 	"../util"
 	"../worker"
-	"log"
+	"fmt"
+	"io/ioutil"
 	"net/rpc"
+	"os"
+	"path/filepath"
 )
 
 type File struct {
@@ -24,11 +28,11 @@ type Action struct {
 	Method  string
 }
 
-func (action *Action) Execute(client *rpc.Client, config *util.Config) *rpc.Call {
+func (action *Action) Execute(client *rpc.Client, config *util.Config) error {
 	infiles, err := GetInfileData(action.Infiles, config.Rootdir)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Error(fmt.Sprintf("executing action %s failed: %s", action.Name, err.Error()))
 	}
 
 	args := proto.Args{
@@ -38,19 +42,24 @@ func (action *Action) Execute(client *rpc.Client, config *util.Config) *rpc.Call
 	}
 	var resp = new(proto.Response)
 
-	return client.Go(action.Method, &args, &resp, nil)
+	return client.Call(action.Method, &args, &resp)
 }
 
 func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	file.Sem <- 1
+	defer func() {
+		<-file.Sem
+		notify <- file
+	}()
 
 	action := file.Action
 	file.Action = nil
 
 	if action == nil {
-		// TODO: Check if file exists, notify.
-		<-file.Sem
-		notify <- file
+		_, err := os.Stat(file.GetAbsolutePath(conf.Rootdir))
+		if err != nil {
+			log.Error(fmt.Sprintf("file %s does not exist: %s", file.Filename, err.Error()))
+		}
 		return
 	}
 
@@ -60,17 +69,140 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 		go MakeFile(action.Infiles[i], conf, new_notify)
 	}
 
+	rebuild := false
+
+	for _ = range action.Infiles {
+		f := <-new_notify
+
+		_, err := os.Stat(f.GetAbsolutePath(conf.Rootdir))
+		if err != nil {
+			log.Error(fmt.Sprintf("file %s does not exist: %s", f.Filename, err.Error()))
+		}
+
+		checksum, err := GetFileChecksum(f, conf)
+		if err != nil {
+			rebuild = true
+			continue
+		}
+
+		meta_checksum, err := GetMetadata(f, conf)
+		if err != nil {
+			rebuild = true
+			continue
+		}
+
+		if checksum != meta_checksum {
+			rebuild = true
+			continue
+		}
+	}
+
+	checksum, err := GetFileChecksum(file, conf)
+	if err != nil {
+		rebuild = true
+	}
+
+	meta_checksum, err := GetMetadata(file, conf)
+	if err != nil {
+		rebuild = true
+	}
+
+	if checksum != meta_checksum {
+		rebuild = true
+	}
+
+	if !rebuild {
+		return
+	}
+
 	// TODO: Chose best worker.
 	var worker worker.Worker
 
-	for _ = range action.Infiles {
-		// TODO: Check if file exists, send to worker.
+	for i := range action.Infiles {
+		f := action.Infiles[i]
+		var resp proto.FileResponse
+
+		fi, err := os.Stat(f.GetAbsolutePath(conf.Rootdir))
+		if err != nil {
+			log.Error(fmt.Sprintf("error sending file %s: %s", err.Error()))
+		}
+
+		content, err := ioutil.ReadFile(f.GetAbsolutePath(conf.Rootdir))
+		if err != nil {
+			log.Error(fmt.Sprintf("error sending file %s: %s", err.Error()))
+		}
+
+		args := proto.File{
+			Filename: f.Filename,
+			Content:  content,
+			Mode:     fi.Mode(),
+		}
+
+		err = worker.Client.Call("File.RecvFile", args, &resp)
+		if err != nil {
+			log.Error(fmt.Sprintf("error sending file %s: %s", err.Error()))
+		}
 	}
 
-	call := action.Execute(worker.Client, conf)
-	// TODO: Wait for action to finish, check if successful, if so, notify, otherwise, log error.
-	<-call.Done
+	err = action.Execute(worker.Client, conf)
+	if err != nil {
+		log.Error(
+			fmt.Sprintf(
+				"executing action for file %s: %s", file.Filename, err.Error()))
+	}
 
-	<-file.Sem
-	notify <- file
+	if !conf.Request {
+		return
+	}
+
+	request := proto.FileRequest{Filename: file.Filename}
+	var resp proto.File
+
+	err = worker.Client.Call("File.SendFile", request, &resp)
+	if err != nil {
+		log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+	}
+
+	full_path := file.GetAbsolutePath(conf.Rootdir)
+	full_dir := filepath.Dir(full_path)
+
+	var mode os.FileMode = os.ModeDir + 0755
+	err = os.MkdirAll(full_dir, mode)
+	if err != nil {
+		log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+	}
+
+	err = ioutil.WriteFile(full_path, resp.Content, resp.Mode)
+	if err != nil {
+		log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+	}
+
+	log.Succ(file.Filename)
+}
+
+func GetFileChecksum(file *File, conf *util.Config) (string, error) {
+	path := file.GetAbsolutePath(conf.Rootdir)
+	d, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	chksum := proto.GetDataChecksum(d)
+	s := ""
+	for i := range chksum {
+		s = fmt.Sprintf("%s%02x", s, chksum[i])
+	}
+	return s, nil
+}
+
+func GetMetadata(file *File, config *util.Config) (string, error) {
+	metadir := filepath.Join(config.Rootdir, ".metadata")
+	metafilename := file.GetAbsolutePath(metadir)
+
+	d, err := ioutil.ReadFile(metafilename)
+	if err != nil {
+		return "", err
+	}
+
+	return string(d), nil
 }

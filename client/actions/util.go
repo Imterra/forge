@@ -43,7 +43,6 @@ func MakeCObjects(name string, sources []string, file_list map[string]*File) []*
 		}
 
 		action := Action{
-			// TODO: Action name == outfile name
 			Name:    fmt.Sprintf("CC(%s)", sources[i]),
 			Infiles: []*File{file},
 			Method:  "Task.CompileC",
