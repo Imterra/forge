@@ -37,6 +37,8 @@ func main() {
 		jobs = *jobs_flag
 	}
 
+	runtime.GOMAXPROCS(jobs)
+
 	var forge_root *string = new(string)
 	*forge_root = ROOT_DEFAULT
 	root_env := os.Getenv("FORGE_ROOT")

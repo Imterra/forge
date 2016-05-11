@@ -84,6 +84,8 @@ func main() {
 		}
 	}
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	if len(flag.Args()) < 1 {
 		fmt.Fprintf(os.Stderr, "\n\nNo target specified.\n\n")
 		fmt.Fprintf(os.Stderr, "usage: %s target...\n\n", os.Args[0])
