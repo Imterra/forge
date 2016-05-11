@@ -2,6 +2,7 @@ package target
 
 import (
 	"../../log"
+	"../util"
 	"fmt"
 	"github.com/smallfish/simpleyaml"
 	"io/ioutil"
@@ -31,7 +32,7 @@ func MakeTarget(targetname, root, cur_dir string) Target {
 		log.Error(
 			fmt.Sprintf(
 				"target %s contains circular dependencies\n(affected targets: %s)",
-				name, strings.Join(affected_targets, ", ")))
+				name, strings.Join(affected_targets, ", ")), util.Exiter)
 	}
 
 	if target_list == nil {
@@ -65,12 +66,12 @@ func GetFile(targetname, packageroot string) string {
 func ParseFile(path, targetname, packageroot string) Target {
 	source, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error(err.Error(), util.Exiter)
 	}
 
 	yaml, err := simpleyaml.NewYaml(source)
 	if err != nil {
-		log.Error(fmt.Sprintf("cannot parse file %s (not a valid YAML)", path))
+		log.Error(fmt.Sprintf("cannot parse file %s (not a valid YAML)", path), util.Exiter)
 	}
 
 	filedir := filepath.Dir(path)
@@ -81,7 +82,7 @@ func ParseFile(path, targetname, packageroot string) Target {
 
 	targettype, err := targetdata.Get("type").String()
 	if err != nil {
-		log.Error(fmt.Sprintf("target %s does not exist", targetname))
+		log.Error(fmt.Sprintf("target %s does not exist", targetname), util.Exiter)
 	}
 
 	var target Target
@@ -121,7 +122,7 @@ func MakeLibCTarget(t_name string, t_data *simpleyaml.Yaml, p_root, p_cur string
 	t_type, _ := t_data.Get("type").String()
 
 	if t_type != "lib_c" {
-		log.Error("invalid type for LibCTarget")
+		log.Error("invalid type for LibCTarget", util.Exiter)
 	}
 
 	dependencies := MakeDependencies(t_data, p_root, p_cur)
@@ -140,7 +141,7 @@ func MakeAppCTarget(t_name string, t_data *simpleyaml.Yaml, p_root, p_cur string
 	t_type, _ := t_data.Get("type").String()
 
 	if t_type != "app_c" {
-		log.Error("invalid type for AppCTarget")
+		log.Error("invalid type for AppCTarget", util.Exiter)
 	}
 
 	dependencies := MakeDependencies(t_data, p_root, p_cur)

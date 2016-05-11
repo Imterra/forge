@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 )
 
 const ROOT_DEFAULT = "~/.forge"
@@ -68,11 +69,13 @@ func main() {
 		jobs_arg := fmt.Sprintf("%d", *jobs_flag)
 		cmd := exec.Command("forge-server", "--root", *forge_root, "--jobs", jobs_arg)
 		err := cmd.Start()
+		util.Exiter = func() { util.CleanupChild(cmd) }
 		defer util.CleanupChild(cmd)
 
 		if err != nil {
 			log.Warn(fmt.Sprintf("starting local worker failed: %s", err.Error()))
 		} else {
+			time.Sleep(10 * time.Millisecond)
 			local_worker, err := worker.GetWorker("[::1]:1103")
 			if err != nil {
 				log.Warn(
@@ -89,7 +92,7 @@ func main() {
 	if len(flag.Args()) < 1 {
 		fmt.Fprintf(os.Stderr, "\n\nNo target specified.\n\n")
 		fmt.Fprintf(os.Stderr, "usage: %s target...\n\n", os.Args[0])
-		panic(log.Exit{1})
+		panic(log.Exit{1, func() {}})
 	}
 	targets := flag.Args()
 	wd, _ := os.Getwd()

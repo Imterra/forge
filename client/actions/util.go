@@ -127,7 +127,7 @@ func ChooseBestWorker(infiles []*File, workers []*worker.Worker) *worker.Worker 
 	worker_sem <- 1
 
 	if len(workers) == 0 {
-		log.Error("no worker specified!")
+		log.Error("no worker specified!", util.Exiter)
 	}
 
 	scores := make([]int, len(workers))

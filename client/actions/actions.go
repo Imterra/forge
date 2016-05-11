@@ -31,7 +31,7 @@ func (action *Action) Execute(config *util.Config, worker *worker.Worker) error 
 	infiles, err := GetInfileData(action.Infiles, config.Rootdir)
 
 	if err != nil {
-		log.Error(fmt.Sprintf("executing action %s failed: %s", action.Name, err.Error()))
+		log.Error(fmt.Sprintf("executing action %s failed: %s", action.Name, err.Error()), util.Exiter)
 	}
 
 	args := proto.Args{
@@ -57,7 +57,7 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	if action == nil {
 		_, err := os.Stat(file.GetAbsolutePath(conf.Rootdir))
 		if err != nil {
-			log.Error(fmt.Sprintf("file %s does not exist: %s", file.Filename, err.Error()))
+			log.Error(fmt.Sprintf("file %s does not exist: %s", file.Filename, err.Error()), util.Exiter)
 		}
 		return
 	}
@@ -78,7 +78,7 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 
 		_, err := os.Stat(f.GetAbsolutePath(conf.Rootdir))
 		if err != nil {
-			log.Error(fmt.Sprintf("file %s does not exist: %s", f.Filename, err.Error()))
+			log.Error(fmt.Sprintf("file %s does not exist: %s", f.Filename, err.Error()), util.Exiter)
 		}
 
 		checksum, err := GetFileChecksum(f, conf)
@@ -123,7 +123,7 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 		f := action.Infiles[i]
 		err := SendFile(f, worker, conf)
 		if err != nil {
-			log.Error(fmt.Sprintf("error sending file %s: %s", err.Error()))
+			log.Error(fmt.Sprintf("error sending file %s: %s", err.Error()), util.Exiter)
 		}
 	}
 
@@ -131,7 +131,7 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	if err != nil {
 		log.Error(
 			fmt.Sprintf(
-				"executing action for file %s: %s", file.Filename, err.Error()))
+				"executing action for file %s: %s", file.Filename, err.Error()), util.Exiter)
 	}
 	GiveFile(worker, file.Filename)
 	FreeWorker(worker)
@@ -143,7 +143,7 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 
 		err = worker.Client.Call("File.SendFile", request, &resp)
 		if err != nil {
-			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()), util.Exiter)
 		}
 
 		full_path := file.GetAbsolutePath(conf.Rootdir)
@@ -152,12 +152,12 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 		var mode os.FileMode = os.ModeDir + 0755
 		err = os.MkdirAll(full_dir, mode)
 		if err != nil {
-			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()), util.Exiter)
 		}
 
 		err = ioutil.WriteFile(full_path, resp.Content, resp.Mode)
 		if err != nil {
-			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()), util.Exiter)
 		}
 
 	}

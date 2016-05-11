@@ -27,3 +27,5 @@ func CleanupChild(cmd *exec.Cmd) {
 	cmd.Process.Signal(os.Interrupt)
 	cmd.Wait()
 }
+
+var Exiter func()
