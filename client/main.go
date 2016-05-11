@@ -117,6 +117,10 @@ func main() {
 		<-notifier
 	}
 	// TODO: Write metadata for all files.
+	err := util.WriteMetadata(*forge_root)
+	if err != nil {
+		log.Warn(fmt.Sprintf("writing metadata failed: %s", err.Error()))
+	}
 
 	log.Succ("Everything done")
 }

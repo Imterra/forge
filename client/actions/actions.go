@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type File struct {
@@ -92,6 +93,7 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 			rebuild = true
 			continue
 		}
+		meta_checksum = strings.Trim(meta_checksum, "\n\r")
 
 		if checksum != meta_checksum {
 			rebuild = true
@@ -108,6 +110,7 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	if err != nil {
 		rebuild = true
 	}
+	meta_checksum = strings.Trim(meta_checksum, "\n\r")
 
 	if checksum != meta_checksum {
 		rebuild = true

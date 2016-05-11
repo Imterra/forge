@@ -2,6 +2,7 @@ package util
 
 import (
 	"../worker"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,3 +30,9 @@ func CleanupChild(cmd *exec.Cmd) {
 }
 
 var Exiter func() = func() {}
+
+func WriteMetadata(rootdir string) error {
+	const script = "cd %s && find -type f -a \\! -path '*/.git/*' -a \\! -path '*/.metadata/*' -exec sh -c \"dirname {} | xargs -I[] mkdir -p .metadata/[] && sha512sum {} | cut -d ' ' -f 1 > .metadata/{}\" \\;"
+
+	return exec.Command("sh", "-c", fmt.Sprintf(script, rootdir)).Start()
+}
