@@ -28,4 +28,4 @@ func CleanupChild(cmd *exec.Cmd) {
 	cmd.Wait()
 }
 
-var Exiter func()
+var Exiter func() = func() {}
