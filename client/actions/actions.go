@@ -46,7 +46,6 @@ func (action *Action) Execute(config *util.Config, worker *worker.Worker) error 
 
 func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	file.Sem <- 1
-	fmt.Printf("[DBG] working on file: %s\n", file.Filename)
 	defer func() {
 		<-file.Sem
 		notify <- file
@@ -66,7 +65,6 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	new_notify := make(chan *File, len(action.Infiles))
 
 	for i := range action.Infiles {
-		fmt.Printf("[DBG] requesting file: %s\n", action.Infiles[i].Filename)
 		go func(i int) {
 			defer log.HandleExit()
 			MakeFile(action.Infiles[i], conf, new_notify)
@@ -77,8 +75,6 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 
 	for _ = range action.Infiles {
 		f := <-new_notify
-
-		fmt.Printf("[DBG] got file: %s for action: %s\n", f.Filename, action.Name)
 
 		_, err := os.Stat(f.GetAbsolutePath(conf.Rootdir))
 		if err != nil {

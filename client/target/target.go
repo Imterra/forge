@@ -57,7 +57,7 @@ func (t *LibCTarget) GetOutputFile() *actions.File {
 		return f
 	}
 
-	inputs := actions.MakeCObjects(t.Name, t.Sources, file_list)
+	inputs := actions.MakeCObjects(t.Name, t.Sources, t.Resources, file_list)
 	ar_action := actions.Action{
 		Name:    strings.TrimPrefix(t.Name, "//"),
 		Infiles: inputs,
@@ -101,7 +101,7 @@ func (t *AppCTarget) GetOutputFile() *actions.File {
 		return f
 	}
 
-	c_inputs := actions.MakeCObjects(t.Name, t.Sources, file_list)
+	c_inputs := actions.MakeCObjects(t.Name, t.Sources, t.Resources, file_list)
 	inputs := make([]*actions.File, len(c_inputs)+len(t.Dependencies))
 
 	in_count := len(c_inputs)
