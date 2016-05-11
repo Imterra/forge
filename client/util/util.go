@@ -1,16 +1,16 @@
 package util
 
 import (
-	"net/rpc"
+	"../worker"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
 type Config struct {
-	Request bool
 	Rootdir string
-	Client  *rpc.Client
-	Monitor chan *rpc.Call
+	Workers []*worker.Worker
 }
 
 func NormalizePath(path string) (string, string) {
@@ -21,4 +21,9 @@ func NormalizePath(path string) (string, string) {
 
 func GetFullPath(abs_filename, rootdir string) string {
 	return filepath.Join(rootdir, strings.TrimPrefix(abs_filename, "//"))
+}
+
+func CleanupChild(cmd *exec.Cmd) {
+	cmd.Process.Signal(os.Interrupt)
+	cmd.Wait()
 }

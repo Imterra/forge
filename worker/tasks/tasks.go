@@ -22,8 +22,8 @@ func (t *Task) CompileC(args *proto.Args, resp *proto.Response) error {
 	defer func() { <-t.Semaphore }()
 
 	var outfilename string
-	if len(args.Inputs) != 1 {
-		return errors.New("Compile requires one file to be compiled!")
+	if len(args.Inputs) < 1 {
+		return errors.New("compile requires at least one file to be compiled")
 	}
 
 	if !strings.HasSuffix(args.Inputs[0].Filename, ".c") {
@@ -32,7 +32,7 @@ func (t *Task) CompileC(args *proto.Args, resp *proto.Response) error {
 		outfilename = strings.TrimSuffix(args.Inputs[0].Filename, ".c") + ".o"
 	}
 
-	outfile_path := filepath.Join(t.Config.Root, "BINFILES", outfilename)
+	outfile_path := filepath.Join(t.Config.Root, outfilename)
 	infile_path := filepath.Join(t.Config.Root, args.Inputs[0].Filename)
 
 	output, err := exec.Command("gcc", "-std=c99", "-c", "-o",
@@ -52,11 +52,11 @@ func (t *Task) ArLink(args *proto.Args, resp *proto.Response) error {
 
 	var outfilename string
 	if len(args.Inputs) < 1 {
-		return errors.New("Library linking requires at least one file!")
+		return errors.New("library linking requires at least one file")
 	}
 
 	outfilename = args.Name + ".a"
-	outdir := filepath.Join(t.Config.Root, "BINFILES")
+	outdir := t.Config.Root
 
 	outfile_path := filepath.Join(outdir, outfilename)
 
@@ -77,11 +77,11 @@ func (t *Task) LdLink(args *proto.Args, resp *proto.Response) error {
 
 	var outfilename string
 	if len(args.Inputs) < 1 {
-		return errors.New("Application linking required at least one file!")
+		return errors.New("application linking requires at least one file")
 	}
 
 	outfilename = args.Name
-	outdir := filepath.Join(t.Config.Root, "BINFILES")
+	outdir := t.Config.Root
 
 	outfile_path := filepath.Join(outdir, outfilename)
 
