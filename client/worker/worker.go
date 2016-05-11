@@ -8,6 +8,8 @@ type Worker struct {
 	Client   *rpc.Client
 	Addr     string
 	NumTasks int
+	Files    map[string]int
+	Request  bool
 }
 
 func GetWorker(addr string) (*Worker, error) {
@@ -24,6 +26,12 @@ func GetWorker(addr string) (*Worker, error) {
 		return nil, err
 	}
 
-	w := Worker{Client: client, Addr: addr, NumTasks: num_tasks}
+	w := Worker{
+		Client:   client,
+		Addr:     addr,
+		NumTasks: num_tasks,
+		Files:    make(map[string]int),
+		Request:  true,
+	}
 	return &w, nil
 }

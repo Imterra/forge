@@ -7,7 +7,6 @@ import (
 	"../worker"
 	"fmt"
 	"io/ioutil"
-	"net/rpc"
 	"os"
 	"path/filepath"
 )
@@ -28,7 +27,7 @@ type Action struct {
 	Method  string
 }
 
-func (action *Action) Execute(client *rpc.Client, config *util.Config) error {
+func (action *Action) Execute(config *util.Config, worker *worker.Worker) error {
 	infiles, err := GetInfileData(action.Infiles, config.Rootdir)
 
 	if err != nil {
@@ -38,15 +37,16 @@ func (action *Action) Execute(client *rpc.Client, config *util.Config) error {
 	args := proto.Args{
 		Name:        action.Name,
 		Inputs:      infiles,
-		SendContent: config.Request,
+		SendContent: worker.Request,
 	}
 	var resp = new(proto.Response)
 
-	return client.Call(action.Method, &args, &resp)
+	return worker.Client.Call(action.Method, &args, &resp)
 }
 
 func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	file.Sem <- 1
+	fmt.Printf("[DBG] working on file: %s\n", file.Filename)
 	defer func() {
 		<-file.Sem
 		notify <- file
@@ -66,13 +66,19 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 	new_notify := make(chan *File, len(action.Infiles))
 
 	for i := range action.Infiles {
-		go MakeFile(action.Infiles[i], conf, new_notify)
+		fmt.Printf("[DBG] requesting file: %s\n", action.Infiles[i].Filename)
+		go func(i int) {
+			defer log.HandleExit()
+			MakeFile(action.Infiles[i], conf, new_notify)
+		}(i)
 	}
 
 	rebuild := false
 
 	for _ = range action.Infiles {
 		f := <-new_notify
+
+		fmt.Printf("[DBG] got file: %s for action: %s\n", f.Filename, action.Name)
 
 		_, err := os.Stat(f.GetAbsolutePath(conf.Rootdir))
 		if err != nil {
@@ -115,68 +121,50 @@ func MakeFile(file *File, conf *util.Config, notify chan *File) {
 		return
 	}
 
-	// TODO: Chose best worker.
-	var worker worker.Worker
+	worker := ChooseBestWorker(action.Infiles, conf.Workers)
 
 	for i := range action.Infiles {
 		f := action.Infiles[i]
-		var resp proto.FileResponse
-
-		fi, err := os.Stat(f.GetAbsolutePath(conf.Rootdir))
-		if err != nil {
-			log.Error(fmt.Sprintf("error sending file %s: %s", err.Error()))
-		}
-
-		content, err := ioutil.ReadFile(f.GetAbsolutePath(conf.Rootdir))
-		if err != nil {
-			log.Error(fmt.Sprintf("error sending file %s: %s", err.Error()))
-		}
-
-		args := proto.File{
-			Filename: f.Filename,
-			Content:  content,
-			Mode:     fi.Mode(),
-		}
-
-		err = worker.Client.Call("File.RecvFile", args, &resp)
+		err := SendFile(f, worker, conf)
 		if err != nil {
 			log.Error(fmt.Sprintf("error sending file %s: %s", err.Error()))
 		}
 	}
 
-	err = action.Execute(worker.Client, conf)
+	err = action.Execute(conf, worker)
 	if err != nil {
 		log.Error(
 			fmt.Sprintf(
 				"executing action for file %s: %s", file.Filename, err.Error()))
 	}
+	GiveFile(worker, file.Filename)
+	FreeWorker(worker)
 
-	if !conf.Request {
-		return
+	if worker.Request {
+
+		request := proto.FileRequest{Filename: file.Filename}
+		var resp proto.File
+
+		err = worker.Client.Call("File.SendFile", request, &resp)
+		if err != nil {
+			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+		}
+
+		full_path := file.GetAbsolutePath(conf.Rootdir)
+		full_dir := filepath.Dir(full_path)
+
+		var mode os.FileMode = os.ModeDir + 0755
+		err = os.MkdirAll(full_dir, mode)
+		if err != nil {
+			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+		}
+
+		err = ioutil.WriteFile(full_path, resp.Content, resp.Mode)
+		if err != nil {
+			log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
+		}
+
 	}
-
-	request := proto.FileRequest{Filename: file.Filename}
-	var resp proto.File
-
-	err = worker.Client.Call("File.SendFile", request, &resp)
-	if err != nil {
-		log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
-	}
-
-	full_path := file.GetAbsolutePath(conf.Rootdir)
-	full_dir := filepath.Dir(full_path)
-
-	var mode os.FileMode = os.ModeDir + 0755
-	err = os.MkdirAll(full_dir, mode)
-	if err != nil {
-		log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
-	}
-
-	err = ioutil.WriteFile(full_path, resp.Content, resp.Mode)
-	if err != nil {
-		log.Error(fmt.Sprintf("receiving file: %s: %s", file.Filename, err.Error()))
-	}
-
 	log.Succ(file.Filename)
 }
 
