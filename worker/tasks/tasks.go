@@ -3,6 +3,7 @@ package tasks
 import (
 	"../../proto"
 	"errors"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -39,7 +40,7 @@ func (t *Task) CompileC(args *proto.Args, resp *proto.Response) error {
 		outfile_path, infile_path).CombinedOutput()
 
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%s\n%s", err.Error(), output))
 	}
 
 	err = prepareResponse(outfile_path, output, args.SendContent, resp)
@@ -64,7 +65,7 @@ func (t *Task) ArLink(args *proto.Args, resp *proto.Response) error {
 
 	output, err := exec.Command("ar", ar_args...).CombinedOutput()
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%s\n%s", err.Error(), output))
 	}
 
 	err = prepareResponse(outfile_path, output, args.SendContent, resp)
@@ -89,7 +90,7 @@ func (t *Task) LdLink(args *proto.Args, resp *proto.Response) error {
 
 	output, err := exec.Command("gcc", ld_args...).CombinedOutput()
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("%s\n%s", err.Error(), output))
 	}
 
 	err = prepareResponse(outfile_path, output, args.SendContent, resp)
